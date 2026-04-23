@@ -63,11 +63,11 @@ class LeKiwiHostConfig:
     port_zmq_cmd: int = 5555
     port_zmq_observations: int = 5556
 
-    # Duration of the application
-    connection_time_s: int = 30
+    # 0 means run forever until KeyboardInterrupt.
+    connection_time_s: int = 0
 
-    # Watchdog: stop the robot if no command is received for over 0.5 seconds.
-    watchdog_timeout_ms: int = 500
+    # 0 means disabled.
+    watchdog_timeout_ms: int = 0
 
     # If robot jitters decrease the frequency and monitor cpu load with `top` in cmd
     max_loop_freq_hz: int = 30

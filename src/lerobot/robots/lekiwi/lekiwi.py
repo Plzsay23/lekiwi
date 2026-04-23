@@ -73,6 +73,7 @@ class LeKiwi(Robot):
         self.arm_motors = [motor for motor in self.bus.motors if motor.startswith("arm")]
         self.base_motors = [motor for motor in self.bus.motors if motor.startswith("base")]
         self.cameras = make_cameras_from_configs(config.cameras)
+        self._last_camera_frames: dict[str, Any] = {}
 
     @property
     def _state_ft(self) -> dict[str, type]:
@@ -351,18 +352,25 @@ class LeKiwi(Robot):
         )
 
         arm_state = {f"{k}.pos": v for k, v in arm_pos.items()}
-
         obs_dict = {**arm_state, **base_vel}
 
         dt_ms = (time.perf_counter() - start) * 1e3
         logger.debug(f"{self} read state: {dt_ms:.1f}ms")
 
-        # Capture images from cameras
         for cam_key, cam in self.cameras.items():
             start = time.perf_counter()
-            obs_dict[cam_key] = cam.read_latest()
-            dt_ms = (time.perf_counter() - start) * 1e3
-            logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
+            try:
+                frame = cam.read_latest()
+                obs_dict[cam_key] = frame
+                self._last_camera_frames[cam_key] = frame
+                dt_ms = (time.perf_counter() - start) * 1e3
+                logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
+            except Exception as e:
+                if cam_key in self._last_camera_frames:
+                    obs_dict[cam_key] = self._last_camera_frames[cam_key]
+                    logger.warning(f"{self} camera '{cam_key}' read failed, using last cached frame: {e}")
+                else:
+                    raise RuntimeError(f"{self} camera '{cam_key}' has no cached frame yet: {e}") from e
 
         return obs_dict
 

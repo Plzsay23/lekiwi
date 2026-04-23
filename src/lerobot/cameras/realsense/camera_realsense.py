@@ -128,6 +128,9 @@ class RealSenseCamera(Camera):
         self.color_mode = config.color_mode
         self.use_depth = config.use_depth
         self.warmup_s = config.warmup_s
+        self.max_frame_age_ms = config.max_frame_age_ms
+        self.read_timeout_ms = config.read_timeout_ms
+        self.reconnect_retry_delay_s = config.reconnect_retry_delay_s
 
         self.rs_pipeline: rs.pipeline | None = None
         self.rs_profile: rs.pipeline_profile | None = None
@@ -352,7 +355,7 @@ class RealSenseCamera(Camera):
 
         self.new_frame_event.clear()
 
-        _ = self.async_read(timeout_ms=10000)
+        _ = self.async_read(timeout_ms=self.read_timeout_ms)
 
         with self.frame_lock:
             depth_map = self.latest_depth_frame
@@ -366,8 +369,8 @@ class RealSenseCamera(Camera):
         if self.rs_pipeline is None:
             raise RuntimeError(f"{self}: rs_pipeline must be initialized before use.")
 
-        ret, frame = self.rs_pipeline.try_wait_for_frames(timeout_ms=10000)
-
+        ret, frame = self.rs_pipeline.try_wait_for_frames(timeout_ms=self.read_timeout_ms)
+        
         if not ret or frame is None:
             raise RuntimeError(f"{self} read failed (status={ret}).")
 
@@ -408,7 +411,7 @@ class RealSenseCamera(Camera):
 
         self.new_frame_event.clear()
 
-        frame = self.async_read(timeout_ms=10000)
+        frame = self.async_read(timeout_ms=self.read_timeout_ms)
 
         read_duration_ms = (time.perf_counter() - start_time) * 1e3
         logger.debug(f"{self} read took: {read_duration_ms:.1f}ms")
@@ -459,21 +462,12 @@ class RealSenseCamera(Camera):
         return processed_image
 
     def _read_loop(self) -> None:
-        """
-        Internal loop run by the background thread for asynchronous reading.
-
-        On each iteration:
-        1. Reads a color frame with 500ms timeout
-        2. Stores result in latest_frame and updates timestamp (thread-safe)
-        3. Sets new_frame_event to notify listeners
-
-        Stops on DeviceNotConnectedError, logs other errors and continues.
-        """
-        if self.stop_event is None:
+        stop_event = self.stop_event
+        if stop_event is None:
             raise RuntimeError(f"{self}: stop_event is not initialized before starting read loop.")
 
         failure_count = 0
-        while not self.stop_event.is_set():
+        while not stop_event.is_set():
             try:
                 frame = self._read_from_hardware()
                 color_frame_raw = frame.get_color_frame()
@@ -498,11 +492,13 @@ class RealSenseCamera(Camera):
             except DeviceNotConnectedError:
                 break
             except Exception as e:
-                if failure_count <= 10:
-                    failure_count += 1
-                    logger.warning(f"Error reading frame in background thread for {self}: {e}")
-                else:
-                    raise RuntimeError(f"{self} exceeded maximum consecutive read failures.") from e
+                failure_count += 1
+                if failure_count <= 10 or failure_count % 100 == 0:
+                    logger.warning(
+                        f"Error reading frame in background thread for {self}: {e} "
+                        f"(consecutive_failures={failure_count})"
+                    )
+                time.sleep(self.reconnect_retry_delay_s)
 
     def _start_read_thread(self) -> None:
         """Starts or restarts the background read thread if it's not running."""
@@ -514,15 +510,16 @@ class RealSenseCamera(Camera):
         self.thread.start()
 
     def _stop_read_thread(self) -> None:
-        """Signals the background read thread to stop and waits for it to join."""
-        if self.stop_event is not None:
-            self.stop_event.set()
+        stop_event = self.stop_event
+        thread = self.thread
 
-        if self.thread is not None and self.thread.is_alive():
-            self.thread.join(timeout=2.0)
+        if stop_event is not None:
+            stop_event.set()
+
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=2.0)
 
         self.thread = None
-        self.stop_event = None
 
         with self.frame_lock:
             self.latest_color_frame = None
@@ -575,7 +572,7 @@ class RealSenseCamera(Camera):
 
     # NOTE(Steven): Missing implementation for depth for now
     @check_if_not_connected
-    def read_latest(self, max_age_ms: int = 500) -> NDArray[Any]:
+    def read_latest(self, max_age_ms: int | None = None) -> NDArray[Any]:
         """Return the most recent (color) frame captured immediately (Peeking).
 
         This method is non-blocking and returns whatever is currently in the
@@ -601,8 +598,11 @@ class RealSenseCamera(Camera):
         if frame is None or timestamp is None:
             raise RuntimeError(f"{self} has not captured any frames yet.")
 
+        if max_age_ms is None:
+            max_age_ms = self.max_frame_age_ms
+
         age_ms = (time.perf_counter() - timestamp) * 1e3
-        if age_ms > max_age_ms:
+        if max_age_ms > 0 and age_ms > max_age_ms:
             raise TimeoutError(
                 f"{self} latest frame is too old: {age_ms:.1f} ms (max allowed: {max_age_ms} ms)."
             )

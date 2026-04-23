@@ -62,6 +62,9 @@ class OpenCVCameraConfig(CameraConfig):
     color_mode: ColorMode = ColorMode.RGB
     rotation: Cv2Rotation = Cv2Rotation.NO_ROTATION
     warmup_s: int = 1
+    max_frame_age_ms: int = 0
+    read_timeout_ms: int = 10000
+    reconnect_retry_delay_s: float = 0.05
     fourcc: str | None = None
     backend: Cv2Backends = Cv2Backends.ANY
 

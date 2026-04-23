@@ -70,65 +70,75 @@ def main(cfg: LeKiwiServerConfig):
     host = LeKiwiHost(cfg.host)
 
     last_cmd_time = time.time()
-    watchdog_active = False
     logging.info("Waiting for commands...")
+
+    start = time.perf_counter()
+
     try:
-        # Business logic
-        start = time.perf_counter()
-        duration = 0
-        while duration < host.connection_time_s:
+        while True:
+            if host.connection_time_s > 0:
+                duration = time.perf_counter() - start
+                if duration >= host.connection_time_s:
+                    logging.info("Connection time reached. Exiting host loop.")
+                    break
+
             loop_start_time = time.time()
+
             try:
-                msg = host.zmq_cmd_socket.recv_string(zmq.NOBLOCK)
-                data = dict(json.loads(msg))
-                _action_sent = robot.send_action(data)
-                last_cmd_time = time.time()
-                watchdog_active = False
-            except zmq.Again:
-                if not watchdog_active:
-                    logging.warning("No command available")
+                try:
+                    msg = host.zmq_cmd_socket.recv_string(zmq.NOBLOCK)
+                    data = dict(json.loads(msg))
+                    _action_sent = robot.send_action(data)
+                    last_cmd_time = time.time()
+                except zmq.Again:
+                    pass
+                except Exception as e:
+                    logging.error("Message fetching failed: %s", e)
+
+                if host.watchdog_timeout_ms > 0:
+                    now = time.time()
+                    if now - last_cmd_time > host.watchdog_timeout_ms / 1000:
+                        logging.warning(
+                            "Command not received for more than %s milliseconds. Stopping the base.",
+                            host.watchdog_timeout_ms,
+                        )
+                        robot.stop_base()
+                        last_cmd_time = now
+
+                last_observation = robot.get_observation()
+
+                for cam_key in robot.cameras:
+                    if cam_key not in last_observation:
+                        continue
+                    ret, buffer = cv2.imencode(
+                        ".jpg", last_observation[cam_key], [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+                    )
+                    if ret:
+                        last_observation[cam_key] = base64.b64encode(buffer).decode("utf-8")
+                    else:
+                        last_observation[cam_key] = ""
+
+                try:
+                    host.zmq_observation_socket.send_string(json.dumps(last_observation), flags=zmq.NOBLOCK)
+                except zmq.Again:
+                    pass
+                except Exception as e:
+                    logging.warning("Observation send failed: %s", e)
+
             except Exception as e:
-                logging.error("Message fetching failed: %s", e)
+                logging.exception("Main host loop error: %s", e)
+                time.sleep(0.1)
 
-            now = time.time()
-            if (now - last_cmd_time > host.watchdog_timeout_ms / 1000) and not watchdog_active:
-                logging.warning(
-                    f"Command not received for more than {host.watchdog_timeout_ms} milliseconds. Stopping the base."
-                )
-                watchdog_active = True
-                robot.stop_base()
-
-            last_observation = robot.get_observation()
-
-            # Encode ndarrays to base64 strings
-            for cam_key, _ in robot.cameras.items():
-                ret, buffer = cv2.imencode(
-                    ".jpg", last_observation[cam_key], [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-                )
-                if ret:
-                    last_observation[cam_key] = base64.b64encode(buffer).decode("utf-8")
-                else:
-                    last_observation[cam_key] = ""
-
-            # Send the observation to the remote agent
-            try:
-                host.zmq_observation_socket.send_string(json.dumps(last_observation), flags=zmq.NOBLOCK)
-            except zmq.Again:
-                logging.info("Dropping observation, no client connected")
-
-            # Ensure a short sleep to avoid overloading the CPU.
             elapsed = time.time() - loop_start_time
-
             time.sleep(max(1 / host.max_loop_freq_hz - elapsed, 0))
-            duration = time.perf_counter() - start
-        print("Cycle time reached.")
 
     except KeyboardInterrupt:
         print("Keyboard interrupt received. Exiting...")
     finally:
-        print("Shutting down Lekiwi Host.")
-        robot.disconnect()
-        host.disconnect()
+        try:
+            robot.disconnect()
+        finally:
+            host.disconnect()
 
     logging.info("Finished LeKiwi cleanly")
 

@@ -11,12 +11,18 @@ config = RealSenseCameraConfig(
 )
 
 camera = RealSenseCamera(config)
+connected = False
 
 try:
-    camera.connect()   # warmup 기본값 사용
+    camera.connect()
+    connected = True
+
     color = camera.read()
     depth = camera.read_depth()
+
     print("color shape:", color.shape)
     print("depth shape:", depth.shape)
+
 finally:
-    camera.disconnect()
+    if connected:
+        camera.disconnect()

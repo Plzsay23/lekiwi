@@ -43,6 +43,14 @@ from .configuration_realsense import RealSenseCameraConfig
 logger = logging.getLogger(__name__)
 
 
+def _get_rs():
+    global rs
+    if rs is None:
+        import pyrealsense2 as _rs
+        rs = _rs
+    return rs
+
+
 class RealSenseCamera(Camera):
     """
     Manages interactions with Intel RealSense cameras for frame and depth recording.
@@ -114,7 +122,7 @@ class RealSenseCamera(Camera):
         Args:
             config: The configuration settings for the camera.
         """
-        require_package("pyrealsense2", extra="intelrealsense")
+        _get_rs()
         super().__init__(config)
 
         self.config = config
@@ -221,7 +229,7 @@ class RealSenseCamera(Camera):
             ImportError: If pyrealsense2 is not installed.
         """
         found_cameras_info = []
-        context = rs.context()
+        context = _get_rs().context()
         devices = context.query_devices()
 
         for device in devices:

@@ -51,6 +51,18 @@ class LeKiwiHost:
         self.connection_time_s = config.connection_time_s
         self.watchdog_timeout_ms = config.watchdog_timeout_ms
         self.max_loop_freq_hz = config.max_loop_freq_hz
+        
+        logging.info(
+            "LeKiwiHost sockets bound: cmd=tcp://*:%s obs=tcp://*:%s",
+            config.port_zmq_cmd,
+            config.port_zmq_observations,
+        )
+        logging.info(
+            "LeKiwiHost config: connection_time_s=%s watchdog_timeout_ms=%s max_loop_freq_hz=%s",
+            self.connection_time_s,
+            self.watchdog_timeout_ms,
+            self.max_loop_freq_hz,
+        )
 
     def disconnect(self):
         self.zmq_observation_socket.close()
@@ -65,14 +77,23 @@ def main(cfg: LeKiwiServerConfig):
 
     logging.info("Connecting LeKiwi")
     robot.connect()
+    
+    logging.info("LeKiwi connected successfully.")
+    logging.info("Connected cameras: %s", list(robot.cameras.keys()))
+    for cam_name, cam_cfg in cfg.robot.cameras.items():
+        logging.info("Camera '%s' config: %s", cam_name, cam_cfg)
 
     logging.info("Starting HostAgent")
     host = LeKiwiHost(cfg.host)
 
     last_cmd_time = time.time()
-    logging.info("Waiting for commands...")
+    logging.info("LeKiwi host server is up.")
+    logging.info("Waiting for commands on tcp://*:%s", cfg.host.port_zmq_cmd)
+    logging.info("Publishing observations on tcp://*:%s", cfg.host.port_zmq_observations)
 
     start = time.perf_counter()
+    
+    loop_started_logged = False
 
     try:
         while True:
@@ -83,6 +104,10 @@ def main(cfg: LeKiwiServerConfig):
                     break
 
             loop_start_time = time.time()
+            
+            if not loop_started_logged:
+                logging.info("Main host loop started.")
+                loop_started_logged = True
 
             try:
                 try:
@@ -117,6 +142,10 @@ def main(cfg: LeKiwiServerConfig):
                         last_observation[cam_key] = base64.b64encode(buffer).decode("utf-8")
                     else:
                         last_observation[cam_key] = ""
+                        
+                for key in list(last_observation.keys()):
+                    if key.endswith("_depth"):
+                        del last_observation[key]
 
                 try:
                     host.zmq_observation_socket.send_string(json.dumps(last_observation), flags=zmq.NOBLOCK)

@@ -24,10 +24,7 @@ import numpy as np
 
 from lerobot.cameras import make_cameras_from_configs
 from lerobot.motors import Motor, MotorCalibration, MotorNormMode
-from lerobot.motors.feetech import (
-    FeetechMotorsBus,
-    OperatingMode,
-)
+from lerobot.motors.feetech import FeetechMotorsBus, OperatingMode
 from lerobot.types import RobotAction, RobotObservation
 from lerobot.utils.decorators import check_if_already_connected, check_if_not_connected
 
@@ -94,9 +91,15 @@ class LeKiwi(Robot):
 
     @property
     def _cameras_ft(self) -> dict[str, tuple]:
-        return {
-            cam: (self.config.cameras[cam].height, self.config.cameras[cam].width, 3) for cam in self.cameras
-        }
+        ft: dict[str, tuple] = {}
+        for cam_name in self.cameras:
+            cfg = self.config.cameras[cam_name]
+            ft[cam_name] = (cfg.height, cfg.width, 3)
+
+            if getattr(cfg, "use_depth", False):
+                ft[f"{cam_name}_depth"] = (cfg.height, cfg.width)
+
+        return ft
 
     @cached_property
     def observation_features(self) -> dict[str, type | tuple]:
@@ -131,7 +134,6 @@ class LeKiwi(Robot):
 
     def calibrate(self) -> None:
         if self.calibration:
-            # Calibration file exists, ask user whether to use it or run new calibration
             user_input = input(
                 f"Press ENTER to use provided calibration file associated with the id {self.id}, or type 'c' and press ENTER to run calibration: "
             )
@@ -181,16 +183,11 @@ class LeKiwi(Robot):
         print("Calibration saved to", self.calibration_fpath)
 
     def configure(self):
-        # Set-up arm actuators (position mode)
-        # We assume that at connection time, arm is in a rest position,
-        # and torque can be safely disabled to run calibration.
         self.bus.disable_torque()
         self.bus.configure_motors()
         for name in self.arm_motors:
             self.bus.write("Operating_Mode", name, OperatingMode.POSITION.value)
-            # Set P_Coefficient to lower value to avoid shakiness (Default is 32)
             self.bus.write("P_Coefficient", name, 16)
-            # Set I_Coefficient and D_Coefficient to default value 0 and 32
             self.bus.write("I_Coefficient", name, 0)
             self.bus.write("D_Coefficient", name, 32)
 
@@ -210,11 +207,10 @@ class LeKiwi(Robot):
         steps_per_deg = 4096.0 / 360.0
         speed_in_steps = degps * steps_per_deg
         speed_int = int(round(speed_in_steps))
-        # Cap the value to fit within signed 16-bit range (-32768 to 32767)
         if speed_int > 0x7FFF:
-            speed_int = 0x7FFF  # 32767 -> maximum positive value
+            speed_int = 0x7FFF
         elif speed_int < -0x8000:
-            speed_int = -0x8000  # -32768 -> minimum negative value
+            speed_int = -0x8000
         return speed_int
 
     @staticmethod
@@ -233,46 +229,16 @@ class LeKiwi(Robot):
         base_radius: float = 0.125,
         max_raw: int = 3000,
     ) -> dict:
-        """
-        Convert desired body-frame velocities into wheel raw commands.
-
-        Parameters:
-          x_cmd      : Linear velocity in x (m/s).
-          y_cmd      : Linear velocity in y (m/s).
-          theta_cmd  : Rotational velocity (deg/s).
-          wheel_radius: Radius of each wheel (meters).
-          base_radius : Distance from the center of rotation to each wheel (meters).
-          max_raw    : Maximum allowed raw command (ticks) per wheel.
-
-        Returns:
-          A dictionary with wheel raw commands:
-             {"base_left_wheel": value, "base_back_wheel": value, "base_right_wheel": value}.
-
-        Notes:
-          - Internally, the method converts theta_cmd to rad/s for the kinematics.
-          - The raw command is computed from the wheels angular speed in deg/s
-            using _degps_to_raw(). If any command exceeds max_raw, all commands
-            are scaled down proportionally.
-        """
-        # Convert rotational velocity from deg/s to rad/s.
         theta_rad = theta * (np.pi / 180.0)
-        # Create the body velocity vector [x, y, theta_rad].
         velocity_vector = np.array([x, y, theta_rad])
 
-        # Define the wheel mounting angles with a -90° offset.
         angles = np.radians(np.array([240, 0, 120]) - 90)
-        # Build the kinematic matrix: each row maps body velocities to a wheel’s linear speed.
-        # The third column (base_radius) accounts for the effect of rotation.
         m = np.array([[np.cos(a), np.sin(a), base_radius] for a in angles])
 
-        # Compute each wheel’s linear speed (m/s) and then its angular speed (rad/s).
         wheel_linear_speeds = m.dot(velocity_vector)
         wheel_angular_speeds = wheel_linear_speeds / wheel_radius
-
-        # Convert wheel angular speeds from rad/s to deg/s.
         wheel_degps = wheel_angular_speeds * (180.0 / np.pi)
 
-        # Scaling
         steps_per_deg = 4096.0 / 360.0
         raw_floats = [abs(degps) * steps_per_deg for degps in wheel_degps]
         max_raw_computed = max(raw_floats)
@@ -280,7 +246,6 @@ class LeKiwi(Robot):
             scale = max_raw / max_raw_computed
             wheel_degps = wheel_degps * scale
 
-        # Convert each wheel’s angular speed (deg/s) to a raw integer.
         wheel_raw = [self._degps_to_raw(deg) for deg in wheel_degps]
 
         return {
@@ -297,19 +262,6 @@ class LeKiwi(Robot):
         wheel_radius: float = 0.05,
         base_radius: float = 0.125,
     ) -> dict[str, Any]:
-        """
-        Convert wheel raw command feedback back into body-frame velocities.
-
-        Parameters:
-          wheel_raw   : Vector with raw wheel commands ("base_left_wheel", "base_back_wheel", "base_right_wheel").
-          wheel_radius: Radius of each wheel (meters).
-          base_radius : Distance from the robot center to each wheel (meters).
-
-        Returns:
-          A dict (x.vel, y.vel, theta.vel) all in m/s
-        """
-
-        # Convert each raw command back to an angular speed in deg/s.
         wheel_degps = np.array(
             [
                 self._raw_to_degps(left_wheel_speed),
@@ -318,16 +270,12 @@ class LeKiwi(Robot):
             ]
         )
 
-        # Convert from deg/s to rad/s.
         wheel_radps = wheel_degps * (np.pi / 180.0)
-        # Compute each wheel’s linear speed (m/s) from its angular speed.
         wheel_linear_speeds = wheel_radps * wheel_radius
 
-        # Define the wheel mounting angles with a -90° offset.
         angles = np.radians(np.array([240, 0, 120]) - 90)
         m = np.array([[np.cos(a), np.sin(a), base_radius] for a in angles])
 
-        # Solve the inverse kinematics: body_velocity = M⁻¹ · wheel_linear_speeds.
         m_inv = np.linalg.inv(m)
         velocity_vector = m_inv.dot(wheel_linear_speeds)
         x, y, theta_rad = velocity_vector
@@ -336,11 +284,33 @@ class LeKiwi(Robot):
             "x.vel": x,
             "y.vel": y,
             "theta.vel": theta,
-        }  # m/s and deg/s
+        }
+
+    def _read_camera_bundle(self, cam_key: str, cam) -> dict[str, Any]:
+        bundle: dict[str, Any] = {}
+
+        color_frame = cam.read_latest()
+        bundle[cam_key] = color_frame
+
+        cam_cfg = self.config.cameras[cam_key]
+        use_depth = getattr(cam_cfg, "use_depth", False)
+
+        if use_depth:
+            depth_frame = None
+
+            if hasattr(cam, "frame_lock") and hasattr(cam, "latest_depth_frame"):
+                with cam.frame_lock:
+                    latest_depth = cam.latest_depth_frame
+                    if latest_depth is not None:
+                        depth_frame = latest_depth.copy()
+
+            if depth_frame is not None:
+                bundle[f"{cam_key}_depth"] = depth_frame
+
+        return bundle
 
     @check_if_not_connected
     def get_observation(self) -> RobotObservation:
-        # Read actuators position for arm and vel for base
         start = time.perf_counter()
         arm_pos = self.bus.sync_read("Present_Position", self.arm_motors)
         base_wheel_vel = self.bus.sync_read("Present_Velocity", self.base_motors)
@@ -360,15 +330,22 @@ class LeKiwi(Robot):
         for cam_key, cam in self.cameras.items():
             start = time.perf_counter()
             try:
-                frame = cam.read_latest()
-                obs_dict[cam_key] = frame
-                self._last_camera_frames[cam_key] = frame
+                cam_bundle = self._read_camera_bundle(cam_key, cam)
+                obs_dict.update(cam_bundle)
+                self._last_camera_frames.update(cam_bundle)
+
                 dt_ms = (time.perf_counter() - start) * 1e3
                 logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
+
             except Exception as e:
-                if cam_key in self._last_camera_frames:
-                    obs_dict[cam_key] = self._last_camera_frames[cam_key]
-                    logger.warning(f"{self} camera '{cam_key}' read failed, using last cached frame: {e}")
+                restored = False
+                for k, v in self._last_camera_frames.items():
+                    if k == cam_key or k.startswith(f"{cam_key}_"):
+                        obs_dict[k] = v
+                        restored = True
+
+                if restored:
+                    logger.warning(f"{self} camera '{cam_key}' read failed, using cached data: {e}")
                 else:
                     raise RuntimeError(f"{self} camera '{cam_key}' has no cached frame yet: {e}") from e
 
@@ -376,19 +353,6 @@ class LeKiwi(Robot):
 
     @check_if_not_connected
     def send_action(self, action: RobotAction) -> RobotAction:
-        """Command lekiwi to move to a target joint configuration.
-
-        The relative action magnitude may be clipped depending on the configuration parameter
-        `max_relative_target`. In this case, the action sent differs from original action.
-        Thus, this function always returns the action actually sent.
-
-        Raises:
-            RobotDeviceNotConnectedError: if robot is not connected.
-
-        Returns:
-            RobotAction: the action sent to the motors, potentially clipped.
-        """
-
         arm_goal_pos = {k: v for k, v in action.items() if k.endswith(".pos")}
         base_goal_vel = {k: v for k, v in action.items() if k.endswith(".vel")}
 
@@ -396,15 +360,12 @@ class LeKiwi(Robot):
             base_goal_vel["x.vel"], base_goal_vel["y.vel"], base_goal_vel["theta.vel"]
         )
 
-        # Cap goal position when too far away from present position.
-        # /!\ Slower fps expected due to reading from the follower.
         if self.config.max_relative_target is not None:
             present_pos = self.bus.sync_read("Present_Position", self.arm_motors)
             goal_present_pos = {key: (g_pos, present_pos[key]) for key, g_pos in arm_goal_pos.items()}
             arm_safe_goal_pos = ensure_safe_goal_position(goal_present_pos, self.config.max_relative_target)
             arm_goal_pos = arm_safe_goal_pos
 
-        # Send goal position to the actuators
         arm_goal_pos_raw = {k.replace(".pos", ""): v for k, v in arm_goal_pos.items()}
         self.bus.sync_write("Goal_Position", arm_goal_pos_raw)
         self.bus.sync_write("Goal_Velocity", base_wheel_goal_vel)

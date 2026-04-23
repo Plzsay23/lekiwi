@@ -57,6 +57,10 @@ def main():
         # Get teleop action
         # Arm
         arm_action = leader_arm.get_action()
+        
+        if "gripper.pos" in arm_action:
+            arm_action["gripper.pos"] = 100.0 - arm_action["gripper.pos"]
+        
         arm_action = {f"arm_{k}": v for k, v in arm_action.items()}
         # Keyboard
         keyboard_keys = keyboard.get_action()

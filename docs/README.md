@@ -7,7 +7,9 @@ Department of IT Convergence Engineering, Internet of Things Track
 [Developers]
 
 Seung-Jae Yoon, yjhanna3@hansung.ac.kr
+
 Nam-In Kim, 2171219@hansung.ac.kr
+
 Beom-su Kim, 2171190@hansung.ac.kr
 
 

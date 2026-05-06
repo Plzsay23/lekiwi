@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>계사 환경 모니터링 맵 - 2대 로봇 더미</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+      background: #f4f5f7;
+      color: #111827;
+    }
+
+    .page {
+      padding: 14px 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .title {
+      background: linear-gradient(135deg, #111827, #374151);
+      color: white;
+      font-size: 27px;
+      font-weight: 800;
+      padding: 14px 28px;
+      border-radius: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      white-space: nowrap;
+    }
+
+    .legend-top {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      font-weight: 700;
+      font-size: 15px;
+      flex-wrap: wrap;
+    }
+
+    .updated {
+      border: 1px solid #c9cdd3;
+      border-radius: 7px;
+      background: white;
+      padding: 10px 16px;
+      color: #374151;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 285px;
+      gap: 14px;
+    }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: white;
+      border: 1px solid #cfd3da;
+      border-radius: 7px;
+      padding: 10px;
+      min-height: 405px;
+    }
+
+    .metric-title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 0 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .temp-title {
+      color: #ea580c;
+    }
+
+    .humid-title {
+      color: #2563eb;
+    }
+
+    .co2-title {
+      color: #15803d;
+    }
+
+    .vent-title {
+      color: #6d28d9;
+    }
+
+    .metric-content {
+      display: grid;
+      grid-template-columns: 1fr 116px;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    canvas.map {
+      width: 100%;
+      height: 305px;
+      border-radius: 5px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+
+    .box {
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      padding: 9px;
+      background: #fcfcfd;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .box-title {
+      font-weight: 800;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 6px 0;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 16px;
+      border: 1px solid #9ca3af;
+    }
+
+    .stat-text {
+      line-height: 1.65;
+      font-size: 12px;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .side-card {
+      background: white;
+      border: 1px solid #cfd3da;
+      border-radius: 7px;
+      padding: 14px;
+    }
+
+    .side-card h3 {
+      margin: 0 0 12px 0;
+      font-size: 17px;
+    }
+
+    #donut {
+      width: 100%;
+      height: 150px;
+    }
+
+    .status-row {
+      display: grid;
+      grid-template-columns: 14px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      margin: 7px 0;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .gas-line {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .recommend {
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .bad {
+      color: #dc2626;
+      font-weight: 800;
+    }
+
+    .warn {
+      color: #ea580c;
+      font-weight: 800;
+    }
+
+    .normal {
+      color: #ca8a04;
+      font-weight: 800;
+    }
+
+    .good {
+      color: #16a34a;
+      font-weight: 800;
+    }
+
+    .unknown {
+      color: #64748b;
+      font-weight: 800;
+    }
+
+    .mini-map {
+      width: 100%;
+      height: 190px;
+      border-radius: 5px;
+      background: #eef2f7;
+      border: 1px solid #e5e7eb;
+    }
+
+    .footer {
+      margin-top: 10px;
+      background: white;
+      border: 1px solid #cfd3da;
+      border-radius: 7px;
+      padding: 10px 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="title">계사 환경 모니터링 맵 (실시간)</div>
+
+      <div class="legend-top">
+        <span>🔵 로봇/측정점</span>
+        <span>🟨 순찰 코스</span>
+        <span>⬜ 미관측 영역</span>
+        <span>🎨 관측된 환경 데이터</span>
+      </div>
+
+      <div class="updated" id="updated">최근 업데이트 : -</div>
+    </div>
+
+    <div class="main">
+      <div>
+        <div class="panels">
+          <section class="metric-card">
+            <h2 class="metric-title temp-title">🌡️ 온도 (℃)</h2>
+            <div class="metric-content">
+              <canvas class="map" id="tempMap" width="560" height="360"></canvas>
+              <div>
+                <div class="box">
+                  <div class="box-title">온도 범례 (℃)</div>
+                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>30.0 이상</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>28.0 ~ 30.0</div>
+                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>26.0 ~ 28.0</div>
+                  <div class="range-row"><span class="swatch" style="background:#a3d65c"></span>24.0 ~ 26.0</div>
+                  <div class="range-row"><span class="swatch" style="background:#74c365"></span>24.0 미만</div>
+                </div>
+                <div class="box stat-text" id="tempStat"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="metric-card">
+            <h2 class="metric-title humid-title">💧 습도 (%)</h2>
+            <div class="metric-content">
+              <canvas class="map" id="humidMap" width="560" height="360"></canvas>
+              <div>
+                <div class="box">
+                  <div class="box-title">습도 범례 (%)</div>
+                  <div class="range-row"><span class="swatch" style="background:#1d4ed8"></span>75 이상</div>
+                  <div class="range-row"><span class="swatch" style="background:#3b82f6"></span>65 ~ 75</div>
+                  <div class="range-row"><span class="swatch" style="background:#67c7d3"></span>55 ~ 65</div>
+                  <div class="range-row"><span class="swatch" style="background:#a7d8a2"></span>45 ~ 55</div>
+                  <div class="range-row"><span class="swatch" style="background:#d7edc8"></span>45 미만</div>
+                </div>
+                <div class="box stat-text" id="humidStat"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="metric-card">
+            <h2 class="metric-title co2-title">🌿 CO₂ (ppm)</h2>
+            <div class="metric-content">
+              <canvas class="map" id="co2Map" width="560" height="360"></canvas>
+              <div>
+                <div class="box">
+                  <div class="box-title">CO₂ 범례 (ppm)</div>
+                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>3,000 이상</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>2,000 ~ 3,000</div>
+                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>1,000 ~ 2,000</div>
+                  <div class="range-row"><span class="swatch" style="background:#a3d65c"></span>500 ~ 1,000</div>
+                  <div class="range-row"><span class="swatch" style="background:#74c365"></span>500 미만</div>
+                </div>
+                <div class="box stat-text" id="co2Stat"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="metric-card">
+            <h2 class="metric-title vent-title">🌀 환기량 (CO₂ & NH₃ 기반)</h2>
+            <div class="metric-content">
+              <canvas class="map" id="ventMap" width="560" height="360"></canvas>
+              <div>
+                <div class="box">
+                  <div class="box-title">환기 상태</div>
+                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>불량</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>주의</div>
+                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>보통</div>
+                  <div class="range-row"><span class="swatch" style="background:#22c55e"></span>양호</div>
+                  <div class="range-row"><span class="swatch" style="background:#38bdf8"></span>우수</div>
+                </div>
+                <div class="box stat-text">
+                  <b>판정 기준</b><br>
+                  · CO₂ ≥ 2,500 ppm 또는<br>
+                  · NH₃ ≥ 15 ppm 이면<br>
+                  <span class="bad">환기 강화 필요</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="footer">
+          <div>
+            <b>해석 가이드</b><br>
+            · 온도 : 적정 범위 16~28℃ 유지 권장<br>
+            · 습도 : 40~70% 유지 권장
+          </div>
+          <div>
+            · CO₂ : 2,500 ppm 이상 시 환기 강화 필요<br>
+            · NH₃ : 15 ppm 이상 시 환기 강화 필요<br>
+            · 로봇이 지나가거나 라이다 관측 범위에 들어온 영역만 표시됩니다.
+          </div>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="side-card">
+          <h3>환기량 통계</h3>
+          <canvas id="donut" width="250" height="150"></canvas>
+          <div id="statusList"></div>
+        </div>
+
+        <div class="side-card">
+          <h3>가스 평균 농도</h3>
+          <div class="gas-line" id="gasAvgCo2">· CO₂ 평균 : -</div>
+          <div class="gas-line" id="gasAvgNh3">· NH₃ 평균 : -</div>
+        </div>
+
+        <div class="side-card">
+          <h3>권장 조치</h3>
+          <div class="recommend" id="recommendBox">-</div>
+        </div>
+
+        <div class="side-card">
+          <h3>계사 위치</h3>
+          <canvas class="mini-map" id="miniMap" width="250" height="190"></canvas>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+const barn = {
+  x: 165,
+  y: 18,
+  w: 230,
+  h: 320
+};
+
+let robotPhase = 0;
+
+// 속도 조절: 작을수록 느림
+const ROBOT_SPEED = 0.0005;
+
+// 로봇이 지나가며 색칠하는 범위
+// 0.06: 매우 좁음
+// 0.08: 추천
+// 0.10: 조금 넓음
+const LIDAR_VIEW_RADIUS = 0.08;
+
+// heatmap 해상도
+const HEAT_STEP = 7;
+
+// 관측된 셀/센서 값 캐시
+// 로봇이 현재 보는 영역만 새로 갱신된다.
+// 과거에 본 영역은 마지막 측정값으로 유지된다.
+const observedGridValues = new Map();
+const observedSensorValues = new Map();
+
+const canvases = {
+  temp: document.getElementById("tempMap"),
+  humid: document.getElementById("humidMap"),
+  co2: document.getElementById("co2Map"),
+  vent: document.getElementById("ventMap")
+};
+
+// 측정점은 좌측/우측 순찰 코스 주변에 배치
+const sensors = [
+  { id: "L1", side: "left",  rx: 0.105, ry: 0.12 },
+  { id: "L2", side: "left",  rx: 0.105, ry: 0.32 },
+  { id: "L3", side: "left",  rx: 0.105, ry: 0.52 },
+  { id: "L4", side: "left",  rx: 0.105, ry: 0.72 },
+  { id: "L5", side: "left",  rx: 0.105, ry: 0.88 },
+
+  { id: "R1", side: "right", rx: 0.895, ry: 0.12 },
+  { id: "R2", side: "right", rx: 0.895, ry: 0.32 },
+  { id: "R3", side: "right", rx: 0.895, ry: 0.52 },
+  { id: "R4", side: "right", rx: 0.895, ry: 0.72 },
+  { id: "R5", side: "right", rx: 0.895, ry: 0.88 }
+];
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function gauss(x, y, cx, cy, sx, sy) {
+  return Math.exp(-(
+    Math.pow((x - cx) / sx, 2) +
+    Math.pow((y - cy) / sy, 2)
+  ));
+}
+
+function envAt(rx, ry) {
+  const t = Date.now() / 1000;
+
+  // 좌우 계사 중 일부 구간에 환기 취약 구역이 있다고 가정한 더미 환경장
+  const leftBad = gauss(rx, ry, 0.10, 0.66, 0.10, 0.20);
+  const rightBad = gauss(rx, ry, 0.90, 0.34, 0.10, 0.18);
+  const centerWeak = gauss(rx, ry, 0.50, 0.55, 0.24, 0.28);
+  const topCool = gauss(rx, ry, 0.50, 0.05, 0.60, 0.18);
+
+  const wave = Math.sin(t * 0.45 + rx * 4.0 + ry * 3.0) * 0.35;
+
+  const temp =
+    25.8 +
+    leftBad * 2.3 +
+    rightBad * 2.8 +
+    centerWeak * 1.6 -
+    topCool * 0.8 +
+    wave;
+
+  const humid =
+    56 +
+    leftBad * 8 +
+    rightBad * 9 +
+    centerWeak * 6 +
+    Math.cos(t * 0.38 + rx * 2.0) * 2.0;
+
+  const co2 =
+    1250 +
+    leftBad * 1150 +
+    rightBad * 1550 +
+    centerWeak * 750 +
+    Math.sin(t * 0.30 + ry * 4.0) * 65;
+
+  const nh3 =
+    4.0 +
+    leftBad * 5.5 +
+    rightBad * 8.0 +
+    centerWeak * 3.5 +
+    Math.cos(t * 0.42 + rx * 3.0) * 0.4;
+
+  return {
+    temp: clamp(temp, 20, 34),
+    humid: clamp(humid, 35, 85),
+    co2: clamp(co2, 400, 3800),
+    nh3: clamp(nh3, 0, 20)
+  };
+}
+
+function colorTemp(v) {
+  if (v >= 30) return "#ef4444";
+  if (v >= 28) return "#fb923c";
+  if (v >= 26) return "#facc15";
+  if (v >= 24) return "#a3d65c";
+  return "#74c365";
+}
+
+function colorHumid(v) {
+  if (v >= 75) return "#1d4ed8";
+  if (v >= 65) return "#3b82f6";
+  if (v >= 55) return "#67c7d3";
+  if (v >= 45) return "#a7d8a2";
+  return "#d7edc8";
+}
+
+function colorCo2(v) {
+  if (v >= 3000) return "#ef4444";
+  if (v >= 2000) return "#fb923c";
+  if (v >= 1000) return "#facc15";
+  if (v >= 500) return "#a3d65c";
+  return "#74c365";
+}
+
+function ventStatus(v) {
+  if (v.co2 >= 3000 || v.nh3 >= 15 || v.temp >= 30) {
+    return { label: "불량", color: "#ef4444", rank: 0 };
+  }
+
+  if (v.co2 >= 2500 || v.nh3 >= 12 || v.temp >= 29) {
+    return { label: "주의", color: "#fb923c", rank: 1 };
+  }
+
+  if (v.co2 >= 1700 || v.nh3 >= 7 || v.humid >= 70) {
+    return { label: "보통", color: "#facc15", rank: 2 };
+  }
+
+  if (v.co2 >= 900 || v.nh3 >= 3) {
+    return { label: "양호", color: "#22c55e", rank: 3 };
+  }
+
+  return { label: "우수", color: "#38bdf8", rank: 4 };
+}
+
+function getRobotPose(side) {
+  let p = robotPhase % 1;
+
+  // 우측 로봇은 좌측 로봇과 같은 위치에서 동시에 돌지 않도록 반 바퀴 위상 차이
+  if (side === "right") {
+    p = (p + 0.5) % 1;
+  }
+
+  let x0;
+  let x1;
+
+  const y0 = 0.035;
+  const y1 = 0.965;
+
+  if (side === "left") {
+    x0 = 0.035;
+    x1 = 0.165;
+  } else {
+    x0 = 0.835;
+    x1 = 0.965;
+  }
+
+  // 각 구간의 실제 길이를 계산
+  const verticalLen = y1 - y0;
+  const horizontalLen = x1 - x0;
+  const totalLen = verticalLen * 2 + horizontalLen * 2;
+
+  // p를 전체 경로 길이 기준 거리로 변환
+  let d = p * totalLen;
+
+  let rx;
+  let ry;
+
+  // 1구간: 왼쪽 세로 하강
+  if (d <= verticalLen) {
+    const t = d / verticalLen;
+    rx = x0;
+    ry = y0 + t * (y1 - y0);
+  }
+
+  // 2구간: 아래쪽 가로 이동
+  else if (d <= verticalLen + horizontalLen) {
+    d -= verticalLen;
+    const t = d / horizontalLen;
+    rx = x0 + t * (x1 - x0);
+    ry = y1;
+  }
+
+  // 3구간: 오른쪽 세로 상승
+  else if (d <= verticalLen + horizontalLen + verticalLen) {
+    d -= verticalLen + horizontalLen;
+    const t = d / verticalLen;
+    rx = x1;
+    ry = y1 - t * (y1 - y0);
+  }
+
+  // 4구간: 위쪽 가로 복귀
+  else {
+    d -= verticalLen + horizontalLen + verticalLen;
+    const t = d / horizontalLen;
+    rx = x1 - t * (x1 - x0);
+    ry = y0;
+  }
+
+  return {
+    side,
+    rx,
+    ry,
+    x: barn.x + barn.w * rx,
+    y: barn.y + barn.h * ry
+  };
+}
+
+function distNorm(aRx, aRy, bRx, bRy) {
+  const dx = aRx - bRx;
+  const dy = aRy - bRy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function isInCurrentLidarView(rx, ry) {
+  const leftRobot = getRobotPose("left");
+  const rightRobot = getRobotPose("right");
+
+  const dLeft = distNorm(rx, ry, leftRobot.rx, leftRobot.ry);
+  const dRight = distNorm(rx, ry, rightRobot.rx, rightRobot.ry);
+
+  return dLeft <= LIDAR_VIEW_RADIUS || dRight <= LIDAR_VIEW_RADIUS;
+}
+
+function observeCurrentArea() {
+  // 현재 두 로봇 주변의 heatmap 셀만 새로 측정
+  for (let y = barn.y; y < barn.y + barn.h; y += HEAT_STEP) {
+    for (let x = barn.x; x < barn.x + barn.w; x += HEAT_STEP) {
+      const rx = (x - barn.x) / barn.w;
+      const ry = (y - barn.y) / barn.h;
+
+      if (!isInCurrentLidarView(rx, ry)) {
+        continue;
+      }
+
+      const key = `${x},${y}`;
+      observedGridValues.set(key, envAt(rx, ry));
+    }
+  }
+
+  // 현재 두 로봇 주변의 센서 지점만 새로 측정
+  for (const s of sensors) {
+    if (!isInCurrentLidarView(s.rx, s.ry)) {
+      continue;
+    }
+
+    observedSensorValues.set(s.id, envAt(s.rx, s.ry));
+  }
+}
+
+function drawUnknownArea(ctx) {
+  ctx.save();
+
+  ctx.fillStyle = "#f1f5f9";
+  ctx.fillRect(barn.x, barn.y, barn.w, barn.h);
+
+  ctx.strokeStyle = "rgba(148, 163, 184, 0.22)";
+  ctx.lineWidth = 1;
+
+  const grid = 18;
+
+  for (let x = barn.x; x <= barn.x + barn.w; x += grid) {
+    ctx.beginPath();
+    ctx.moveTo(x, barn.y);
+    ctx.lineTo(x, barn.y + barn.h);
+    ctx.stroke();
+  }
+
+  for (let y = barn.y; y <= barn.y + barn.h; y += grid) {
+    ctx.beginPath();
+    ctx.moveTo(barn.x, y);
+    ctx.lineTo(barn.x + barn.w, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "rgba(71, 85, 105, 0.62)";
+  ctx.font = "bold 14px Arial";
+  ctx.fillText("미관측 영역", barn.x + 14, barn.y + 24);
+
+  ctx.restore();
+}
+
+function drawHeat(ctx, type) {
+  drawUnknownArea(ctx);
+
+  for (let y = barn.y; y < barn.y + barn.h; y += HEAT_STEP) {
+    for (let x = barn.x; x < barn.x + barn.w; x += HEAT_STEP) {
+      const key = `${x},${y}`;
+      const v = observedGridValues.get(key);
+
+      if (!v) {
+        continue;
+      }
+
+      let color = "#ddd";
+
+      if (type === "temp") {
+        color = colorTemp(v.temp);
+      }
+
+      if (type === "humid") {
+        color = colorHumid(v.humid);
+      }
+
+      if (type === "co2") {
+        color = colorCo2(v.co2);
+      }
+
+      if (type === "vent") {
+        color = ventStatus(v).color;
+      }
+
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.92;
+      ctx.fillRect(x, y, HEAT_STEP + 1, HEAT_STEP + 1);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function drawBarn(ctx) {
+  ctx.save();
+
+  // 실제 SLAM 맵처럼 단순 외곽선만 표시
+  ctx.strokeStyle = "#111827";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(barn.x, barn.y, barn.w, barn.h);
+
+  // 좌우 대칭 기준선
+  ctx.strokeStyle = "rgba(17, 24, 39, 0.18)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(barn.x + barn.w / 2, barn.y);
+  ctx.lineTo(barn.x + barn.w / 2, barn.y + barn.h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.restore();
+}
+
+function drawPatrol(ctx) {
+  ctx.save();
+
+  ctx.strokeStyle = "#eab308";
+  ctx.lineWidth = 5;
+  ctx.lineJoin = "round";
+
+  const paths = [
+    { x0: 0.035, x1: 0.165, y0: 0.035, y1: 0.965 },
+    { x0: 0.835, x1: 0.965, y0: 0.035, y1: 0.965 }
+  ];
+
+  for (const p of paths) {
+    ctx.beginPath();
+    ctx.moveTo(barn.x + barn.w * p.x0, barn.y + barn.h * p.y0);
+    ctx.lineTo(barn.x + barn.w * p.x0, barn.y + barn.h * p.y1);
+    ctx.lineTo(barn.x + barn.w * p.x1, barn.y + barn.h * p.y1);
+    ctx.lineTo(barn.x + barn.w * p.x1, barn.y + barn.h * p.y0);
+    ctx.lineTo(barn.x + barn.w * p.x0, barn.y + barn.h * p.y0);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#854d0e";
+  ctx.font = "bold 12px Arial";
+  ctx.fillText("좌측 로봇 순찰 코스", barn.x - 78, barn.y + 16);
+  ctx.fillText("우측 로봇 순찰 코스", barn.x + barn.w + 10, barn.y + 16);
+
+  ctx.restore();
+}
+
+function drawSensors(ctx, type) {
+  ctx.save();
+
+  ctx.font = "bold 12px Arial";
+  ctx.textBaseline = "middle";
+
+  for (const s of sensors) {
+    const v = observedSensorValues.get(s.id);
+
+    // 아직 로봇이 관측하지 않은 센서 지점이면 표시하지 않음
+    if (!v) {
+      continue;
+    }
+
+    const x = barn.x + barn.w * s.rx;
+    const y = barn.y + barn.h * s.ry;
+    const st = ventStatus(v);
+
+    let label = "";
+
+    if (type === "temp") {
+      label = v.temp.toFixed(1);
+    }
+
+    if (type === "humid") {
+      label = Math.round(v.humid).toString();
+    }
+
+    if (type === "co2") {
+      label = Math.round(v.co2).toLocaleString();
+    }
+
+    if (type === "vent") {
+      label = st.label;
+    }
+
+    ctx.beginPath();
+    ctx.fillStyle = "#0ea5e9";
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 3;
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+    ctx.strokeText(label, x + 9, y);
+
+    ctx.fillStyle = "#111827";
+    ctx.fillText(label, x + 9, y);
+  }
+
+  ctx.restore();
+}
+
+function drawRobot(ctx) {
+  const robots = [
+    { side: "left", label: "L" },
+    { side: "right", label: "R" }
+  ];
+
+  ctx.save();
+  ctx.font = "bold 11px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (const robot of robots) {
+    const r = getRobotPose(robot.side);
+
+    ctx.beginPath();
+    ctx.fillStyle = "#2563eb";
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 3;
+    ctx.arc(r.x, r.y, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "white";
+    ctx.fillText(robot.label, r.x, r.y + 0.5);
+  }
+
+  ctx.restore();
+}
+
+function drawPanel(type) {
+  const canvas = canvases[type];
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#f9fafb";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawHeat(ctx, type);
+  drawBarn(ctx);
+  drawPatrol(ctx);
+  drawSensors(ctx, type);
+  drawRobot(ctx);
+}
+
+function getSensorValues() {
+  return sensors
+    .filter(s => observedSensorValues.has(s.id))
+    .map(s => {
+      const v = observedSensorValues.get(s.id);
+
+      return {
+        ...s,
+        ...v,
+        status: ventStatus(v)
+      };
+    });
+}
+
+function avg(arr, key) {
+  if (arr.length === 0) {
+    return 0;
+  }
+
+  return arr.reduce((sum, v) => sum + v[key], 0) / arr.length;
+}
+
+function updateMetricStats(values) {
+  if (values.length === 0) {
+    document.getElementById("tempStat").innerHTML =
+      `<b>통계</b><br>· 관측 데이터 없음`;
+
+    document.getElementById("humidStat").innerHTML =
+      `<b>통계</b><br>· 관측 데이터 없음`;
+
+    document.getElementById("co2Stat").innerHTML =
+      `<b>통계</b><br>· 관측 데이터 없음`;
+
+    return;
+  }
+
+  const temps = values.map(v => v.temp);
+  const humids = values.map(v => v.humid);
+  const co2s = values.map(v => v.co2);
+
+  document.getElementById("tempStat").innerHTML =
+    `<b>통계</b><br>` +
+    `· 평균 : ${avg(values, "temp").toFixed(1)} ℃<br>` +
+    `· 최고 : ${Math.max(...temps).toFixed(1)} ℃<br>` +
+    `· 최저 : ${Math.min(...temps).toFixed(1)} ℃<br>` +
+    `· 관측 : ${values.length}개 지점`;
+
+  document.getElementById("humidStat").innerHTML =
+    `<b>통계</b><br>` +
+    `· 평균 : ${avg(values, "humid").toFixed(0)} %<br>` +
+    `· 최고 : ${Math.max(...humids).toFixed(0)} %<br>` +
+    `· 최저 : ${Math.min(...humids).toFixed(0)} %<br>` +
+    `· 관측 : ${values.length}개 지점`;
+
+  document.getElementById("co2Stat").innerHTML =
+    `<b>통계</b><br>` +
+    `· 평균 : ${Math.round(avg(values, "co2")).toLocaleString()} ppm<br>` +
+    `· 최고 : ${Math.round(Math.max(...co2s)).toLocaleString()} ppm<br>` +
+    `· 최저 : ${Math.round(Math.min(...co2s)).toLocaleString()} ppm<br>` +
+    `· 관측 : ${values.length}개 지점`;
+}
+
+function updateSidebar(values) {
+  if (values.length === 0) {
+    document.getElementById("statusList").innerHTML =
+      `<span class="unknown">관측 데이터 없음</span>`;
+
+    document.getElementById("gasAvgCo2").textContent =
+      "· CO₂ 평균 : 관측 데이터 없음";
+
+    document.getElementById("gasAvgNh3").textContent =
+      "· NH₃ 평균 : 관측 데이터 없음";
+
+    document.getElementById("recommendBox").innerHTML =
+      `· 아직 로봇이 관측한 구역이 부족합니다.<br>` +
+      `· 좌우 순찰 코스를 계속 주행하십시오.`;
+
+    drawDonut({
+      "불량": 0,
+      "주의": 0,
+      "보통": 0,
+      "양호": 0,
+      "우수": 0
+    });
+
+    return;
+  }
+
+  const counts = {
+    "불량": 0,
+    "주의": 0,
+    "보통": 0,
+    "양호": 0,
+    "우수": 0
+  };
+
+  for (const v of values) {
+    counts[v.status.label]++;
+  }
+
+  drawDonut(counts);
+
+  const statusColors = {
+    "불량": "#ef4444",
+    "주의": "#fb923c",
+    "보통": "#facc15",
+    "양호": "#22c55e",
+    "우수": "#38bdf8"
+  };
+
+  const total = values.length;
+  let html = "";
+
+  for (const key of ["불량", "주의", "보통", "양호", "우수"]) {
+    const pct = total > 0 ? (counts[key] / total * 100).toFixed(1) : "0.0";
+
+    html += `
+      <div class="status-row">
+        <span class="dot" style="background:${statusColors[key]}"></span>
+        <span>${key}</span>
+        <span>${pct}% (${counts[key]})</span>
+      </div>
+    `;
+  }
+
+  document.getElementById("statusList").innerHTML = html;
+
+  document.getElementById("gasAvgCo2").textContent =
+    `· CO₂ 평균 : ${Math.round(avg(values, "co2")).toLocaleString()} ppm`;
+
+  document.getElementById("gasAvgNh3").textContent =
+    `· NH₃ 평균 : ${avg(values, "nh3").toFixed(1)} ppm`;
+
+  let recommend = "";
+
+  if (counts["불량"] > 0) {
+    recommend = `
+      · 일부 관측 지점 : <span class="bad">즉시 환기 필요</span><br>
+      · 환기팬 강제 가동 권장<br>
+      · 입기창/출기구 상태 점검<br>
+      · 다음 순찰에서 동일 구역 재측정
+    `;
+  } else if (counts["주의"] > 0) {
+    recommend = `
+      · 일부 관측 지점 : <span class="warn">환기 강화 권장</span><br>
+      · 환기팬 단계 상향<br>
+      · CO₂/NH₃ 상승 추세 확인<br>
+      · 다음 순찰에서 재측정
+    `;
+  } else if (counts["보통"] > 0) {
+    recommend = `
+      · 현재 관측 지점 : <span class="normal">상태 관찰</span><br>
+      · 정기 순찰 유지<br>
+      · 미관측 영역 순찰 지속
+    `;
+  } else {
+    recommend = `
+      · 현재 관측 지점 : <span class="good">양호</span><br>
+      · 기존 환기 상태 유지<br>
+      · 좌우 코스 정기 순찰 지속
+    `;
+  }
+
+  document.getElementById("recommendBox").innerHTML = recommend;
+}
+
+function drawDonut(counts) {
+  const canvas = document.getElementById("donut");
+  const ctx = canvas.getContext("2d");
+
+  const colors = {
+    "불량": "#ef4444",
+    "주의": "#fb923c",
+    "보통": "#facc15",
+    "양호": "#22c55e",
+    "우수": "#38bdf8"
+  };
+
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  const cx = 78;
+  const cy = 75;
+  const r = 52;
+  const inner = 29;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (total === 0) {
+    ctx.beginPath();
+    ctx.fillStyle = "#cbd5e1";
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    let start = -Math.PI / 2;
+
+    for (const key of ["불량", "주의", "보통", "양호", "우수"]) {
+      const value = counts[key];
+      const angle = (value / total) * Math.PI * 2;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.fillStyle = colors[key];
+      ctx.arc(cx, cy, r, start, start + angle);
+      ctx.closePath();
+      ctx.fill();
+
+      start += angle;
+    }
+  }
+
+  ctx.beginPath();
+  ctx.fillStyle = "white";
+  ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#111827";
+  ctx.font = "bold 22px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(total, cx, cy - 2);
+
+  ctx.font = "12px Arial";
+  ctx.fillText("관측 지점", cx, cy + 17);
+  ctx.textAlign = "left";
+}
+
+function drawMiniMap() {
+  const canvas = document.getElementById("miniMap");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#cfe8c5";
+  ctx.fillRect(8, 8, 234, 174);
+
+  const mb = {
+    x: 82,
+    y: 18,
+    w: 86,
+    h: 154
+  };
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.strokeStyle = "#6b7280";
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(mb.x, mb.y, mb.w, mb.h);
+  ctx.strokeRect(mb.x, mb.y, mb.w, mb.h);
+
+  ctx.strokeStyle = "#eab308";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(mb.x + mb.w * 0.035, mb.y + mb.h * 0.035, mb.w * 0.13, mb.h * 0.93);
+  ctx.strokeRect(mb.x + mb.w * 0.835, mb.y + mb.h * 0.035, mb.w * 0.13, mb.h * 0.93);
+
+  ctx.strokeStyle = "rgba(17, 24, 39, 0.18)";
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(mb.x + mb.w / 2, mb.y);
+  ctx.lineTo(mb.x + mb.w / 2, mb.y + mb.h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const leftRobot = getRobotPose("left");
+  const rightRobot = getRobotPose("right");
+
+  const robots = [
+    { pose: leftRobot, label: "L" },
+    { pose: rightRobot, label: "R" }
+  ];
+
+  ctx.font = "bold 9px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (const robot of robots) {
+    const x = mb.x + mb.w * robot.pose.rx;
+    const y = mb.y + mb.h * robot.pose.ry;
+
+    ctx.beginPath();
+    ctx.fillStyle = "#2563eb";
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "white";
+    ctx.fillText(robot.label, x, y + 0.2);
+  }
+
+  ctx.textAlign = "left";
+}
+
+function render() {
+  observeCurrentArea();
+
+  drawPanel("temp");
+  drawPanel("humid");
+  drawPanel("co2");
+  drawPanel("vent");
+
+  const values = getSensorValues();
+
+  updateMetricStats(values);
+  updateSidebar(values);
+  drawMiniMap();
+
+  const now = new Date();
+
+  document.getElementById("updated").textContent =
+    `최근 업데이트 : ${now.toLocaleString()}`;
+
+  robotPhase += ROBOT_SPEED;
+
+  requestAnimationFrame(render);
+}
+
+render();
+</script>
+</body>
+</html>

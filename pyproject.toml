@@ -59,8 +59,8 @@ keywords = ["lerobot", "huggingface", "robotics",  "machine learning", "artifici
 
 dependencies = [
     # Core ML
-    "torch>=2.7,<2.11.0",
-    "torchvision>=0.22.0,<0.26.0",
+    "torch>=2.7",
+    "torchvision>=0.22.0",
     "numpy>=2.0.0,<2.3.0", # NOTE: Explicitly listing numpy helps the resolver converge faster. Upper bound imposed by opencv-python-headless.
     "opencv-python-headless>=4.9.0,<4.14.0",
     "Pillow>=10.0.0,<13.0.0",

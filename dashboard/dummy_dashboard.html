@@ -1,5 +1,3 @@
-# 더미데이터를 활용한 대시보드
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -276,11 +274,11 @@
               <div>
                 <div class="box">
                   <div class="box-title">온도 범례 (℃)</div>
-                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>30.0 이상</div>
-                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>28.0 ~ 30.0</div>
-                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>26.0 ~ 28.0</div>
-                  <div class="range-row"><span class="swatch" style="background:#a3d65c"></span>24.0 ~ 26.0</div>
-                  <div class="range-row"><span class="swatch" style="background:#74c365"></span>24.0 미만</div>
+                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>31 이상</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>28 ~ 30</div>
+                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>25 ~ 27</div>
+                  <div class="range-row"><span class="swatch" style="background:#22c55e"></span>20 ~ 24</div>
+                  <div class="range-row"><span class="swatch" style="background:#38bdf8"></span>20 미만</div>
                 </div>
                 <div class="box stat-text" id="tempStat"></div>
               </div>
@@ -294,11 +292,11 @@
               <div>
                 <div class="box">
                   <div class="box-title">습도 범례 (%)</div>
-                  <div class="range-row"><span class="swatch" style="background:#1d4ed8"></span>75 이상</div>
-                  <div class="range-row"><span class="swatch" style="background:#3b82f6"></span>65 ~ 75</div>
-                  <div class="range-row"><span class="swatch" style="background:#67c7d3"></span>55 ~ 65</div>
-                  <div class="range-row"><span class="swatch" style="background:#a7d8a2"></span>45 ~ 55</div>
-                  <div class="range-row"><span class="swatch" style="background:#d7edc8"></span>45 미만</div>
+                  <div class="range-row"><span class="swatch" style="background:#ef4444"></span>80 이상</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>75 ~ 80</div>
+                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>70 ~ 75</div>
+                  <div class="range-row"><span class="swatch" style="background:#22c55e"></span>50 ~ 70</div>
+                  <div class="range-row"><span class="swatch" style="background:#38bdf8"></span>50 미만</div>
                 </div>
                 <div class="box stat-text" id="humidStat"></div>
               </div>
@@ -313,10 +311,9 @@
                 <div class="box">
                   <div class="box-title">CO₂ 범례 (ppm)</div>
                   <div class="range-row"><span class="swatch" style="background:#ef4444"></span>3,000 이상</div>
-                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>2,000 ~ 3,000</div>
-                  <div class="range-row"><span class="swatch" style="background:#facc15"></span>1,000 ~ 2,000</div>
-                  <div class="range-row"><span class="swatch" style="background:#a3d65c"></span>500 ~ 1,000</div>
-                  <div class="range-row"><span class="swatch" style="background:#74c365"></span>500 미만</div>
+                  <div class="range-row"><span class="swatch" style="background:#fb923c"></span>2,500 ~ 3,000</div>
+                  <div class="range-row"><span class="swatch" style="background:#22c55e"></span>1,000 ~ 2,500</div>
+                  <div class="range-row"><span class="swatch" style="background:#38bdf8"></span>1,000 미만</div>
                 </div>
                 <div class="box stat-text" id="co2Stat"></div>
               </div>
@@ -338,9 +335,11 @@
                 </div>
                 <div class="box stat-text">
                   <b>판정 기준</b><br>
-                  · CO₂ ≥ 2,500 ppm 또는<br>
-                  · NH₃ ≥ 15 ppm 이면<br>
-                  <span class="bad">환기 강화 필요</span>
+                  · 온도 31℃ 이상 : <span class="bad">고위험</span><br>
+                  · 습도 80% 이상 : <span class="bad">고위험</span><br>
+                  · CO₂ 3,000 ppm 이상 : <span class="bad">기준 한계</span><br>
+                  · NH₃ 25 ppm 이상 : <span class="bad">초과 금지</span><br>
+                  · CO₂ 2,500 ppm 이상 또는 NH₃ 10 ppm 이상부터 환기 상태 주의
                 </div>
               </div>
             </div>
@@ -350,12 +349,12 @@
         <div class="footer">
           <div>
             <b>해석 가이드</b><br>
-            · 온도 : 적정 범위 16~28℃ 유지 권장<br>
-            · 습도 : 40~70% 유지 권장
+            · 온도 권장 : 20~24℃ / 주의 : 25~27℃ / 위험 : 28~30℃ / 고위험 : 31℃ 이상<br>
+            · 습도 권장 : 50~70% / 주의 : 70~75% / 위험 : 75~80% / 고위험 : 80% 이상
           </div>
           <div>
-            · CO₂ : 2,500 ppm 이상 시 환기 강화 필요<br>
-            · NH₃ : 15 ppm 이상 시 환기 강화 필요<br>
+            · CO₂ : 2,500 ppm 이상 시 공기질 주의, 3,000 ppm 이상 기준 한계<br>
+            · NH₃ : 10 ppm 이상 주의, 20 ppm 이상 단기 노출 상한, 25 ppm 이상 초과 금지<br>
             · 로봇이 지나가거나 라이다 관측 범위에 들어온 영역만 표시됩니다.
           </div>
         </div>
@@ -397,21 +396,23 @@ const barn = {
 
 let robotPhase = 0;
 
-// 속도 조절: 작을수록 느림
-const ROBOT_SPEED = 0.0005;
+// 전체 주행 속도 조절 변수
+// 작을수록 느림, 클수록 빠름
+// 추천: 0.0012 ~ 0.0018
+const ROBOT_SPEED = 0.0015;
 
-// 로봇이 지나가며 색칠하는 범위
+// 로봇이 지나가며 관측하는 범위
 // 0.06: 매우 좁음
 // 0.08: 추천
 // 0.10: 조금 넓음
 const LIDAR_VIEW_RADIUS = 0.08;
 
 // heatmap 해상도
+// 작을수록 촘촘하지만 연산량 증가
 const HEAT_STEP = 7;
 
-// 관측된 셀/센서 값 캐시
-// 로봇이 현재 보는 영역만 새로 갱신된다.
-// 과거에 본 영역은 마지막 측정값으로 유지된다.
+// 관측값 캐시
+// 현재 로봇이 보는 영역만 갱신되고, 과거 관측 영역은 마지막 측정값 유지
 const observedGridValues = new Map();
 const observedSensorValues = new Map();
 
@@ -422,7 +423,6 @@ const canvases = {
   vent: document.getElementById("ventMap")
 };
 
-// 측정점은 좌측/우측 순찰 코스 주변에 배치
 const sensors = [
   { id: "L1", side: "left",  rx: 0.105, ry: 0.12 },
   { id: "L2", side: "left",  rx: 0.105, ry: 0.32 },
@@ -451,99 +451,137 @@ function gauss(x, y, cx, cy, sx, sy) {
 function envAt(rx, ry) {
   const t = Date.now() / 1000;
 
-  // 좌우 계사 중 일부 구간에 환기 취약 구역이 있다고 가정한 더미 환경장
-  const leftBad = gauss(rx, ry, 0.10, 0.66, 0.10, 0.20);
-  const rightBad = gauss(rx, ry, 0.90, 0.34, 0.10, 0.18);
-  const centerWeak = gauss(rx, ry, 0.50, 0.55, 0.24, 0.28);
+  const leftRisk = gauss(rx, ry, 0.10, 0.68, 0.10, 0.22);
+  const rightRisk = gauss(rx, ry, 0.90, 0.34, 0.10, 0.20);
+  const centerWeak = gauss(rx, ry, 0.50, 0.55, 0.26, 0.30);
   const topCool = gauss(rx, ry, 0.50, 0.05, 0.60, 0.18);
 
   const wave = Math.sin(t * 0.45 + rx * 4.0 + ry * 3.0) * 0.35;
 
   const temp =
-    25.8 +
-    leftBad * 2.3 +
-    rightBad * 2.8 +
-    centerWeak * 1.6 -
-    topCool * 0.8 +
+    22.6 +
+    leftRisk * 5.8 +
+    rightRisk * 7.2 +
+    centerWeak * 3.2 -
+    topCool * 1.0 +
     wave;
 
   const humid =
-    56 +
-    leftBad * 8 +
-    rightBad * 9 +
-    centerWeak * 6 +
+    60 +
+    leftRisk * 15 +
+    rightRisk * 19 +
+    centerWeak * 8 +
     Math.cos(t * 0.38 + rx * 2.0) * 2.0;
 
   const co2 =
-    1250 +
-    leftBad * 1150 +
-    rightBad * 1550 +
-    centerWeak * 750 +
-    Math.sin(t * 0.30 + ry * 4.0) * 65;
+    1350 +
+    leftRisk * 1250 +
+    rightRisk * 1850 +
+    centerWeak * 650 +
+    Math.sin(t * 0.30 + ry * 4.0) * 70;
 
   const nh3 =
-    4.0 +
-    leftBad * 5.5 +
-    rightBad * 8.0 +
-    centerWeak * 3.5 +
-    Math.cos(t * 0.42 + rx * 3.0) * 0.4;
+    4.5 +
+    leftRisk * 11.0 +
+    rightRisk * 19.5 +
+    centerWeak * 5.0 +
+    Math.cos(t * 0.42 + rx * 3.0) * 0.5;
 
   return {
-    temp: clamp(temp, 20, 34),
-    humid: clamp(humid, 35, 85),
-    co2: clamp(co2, 400, 3800),
-    nh3: clamp(nh3, 0, 20)
+    temp: clamp(temp, 16, 35),
+    humid: clamp(humid, 35, 90),
+    co2: clamp(co2, 400, 3900),
+    nh3: clamp(nh3, 0, 30)
   };
 }
 
 function colorTemp(v) {
-  if (v >= 30) return "#ef4444";
+  if (v >= 31) return "#ef4444";
   if (v >= 28) return "#fb923c";
-  if (v >= 26) return "#facc15";
-  if (v >= 24) return "#a3d65c";
-  return "#74c365";
+  if (v >= 25) return "#facc15";
+  if (v >= 20) return "#22c55e";
+  return "#38bdf8";
 }
 
 function colorHumid(v) {
-  if (v >= 75) return "#1d4ed8";
-  if (v >= 65) return "#3b82f6";
-  if (v >= 55) return "#67c7d3";
-  if (v >= 45) return "#a7d8a2";
-  return "#d7edc8";
+  if (v >= 80) return "#ef4444";
+  if (v >= 75) return "#fb923c";
+  if (v >= 70) return "#facc15";
+  if (v >= 50) return "#22c55e";
+  return "#38bdf8";
 }
 
 function colorCo2(v) {
   if (v >= 3000) return "#ef4444";
-  if (v >= 2000) return "#fb923c";
-  if (v >= 1000) return "#facc15";
-  if (v >= 500) return "#a3d65c";
-  return "#74c365";
+  if (v >= 2500) return "#fb923c";
+  if (v >= 1000) return "#22c55e";
+  return "#38bdf8";
 }
 
 function ventStatus(v) {
-  if (v.co2 >= 3000 || v.nh3 >= 15 || v.temp >= 30) {
-    return { label: "불량", color: "#ef4444", rank: 0 };
+  if (
+    v.temp >= 31 ||
+    v.humid >= 80 ||
+    v.co2 >= 3000 ||
+    v.nh3 >= 25
+  ) {
+    return {
+      label: "불량",
+      color: "#ef4444",
+      rank: 0
+    };
   }
 
-  if (v.co2 >= 2500 || v.nh3 >= 12 || v.temp >= 29) {
-    return { label: "주의", color: "#fb923c", rank: 1 };
+  if (
+    v.temp >= 28 ||
+    v.humid >= 75 ||
+    v.co2 >= 2500 ||
+    v.nh3 >= 20
+  ) {
+    return {
+      label: "주의",
+      color: "#fb923c",
+      rank: 1
+    };
   }
 
-  if (v.co2 >= 1700 || v.nh3 >= 7 || v.humid >= 70) {
-    return { label: "보통", color: "#facc15", rank: 2 };
+  if (
+    v.temp >= 25 ||
+    v.humid >= 70 ||
+    v.nh3 >= 10
+  ) {
+    return {
+      label: "보통",
+      color: "#facc15",
+      rank: 2
+    };
   }
 
-  if (v.co2 >= 900 || v.nh3 >= 3) {
-    return { label: "양호", color: "#22c55e", rank: 3 };
+  if (
+    v.temp >= 20 &&
+    v.temp < 25 &&
+    v.humid >= 50 &&
+    v.humid < 70 &&
+    v.co2 < 2500 &&
+    v.nh3 < 10
+  ) {
+    return {
+      label: "양호",
+      color: "#22c55e",
+      rank: 3
+    };
   }
 
-  return { label: "우수", color: "#38bdf8", rank: 4 };
+  return {
+    label: "우수",
+    color: "#38bdf8",
+    rank: 4
+  };
 }
 
 function getRobotPose(side) {
   let p = robotPhase % 1;
 
-  // 우측 로봇은 좌측 로봇과 같은 위치에서 동시에 돌지 않도록 반 바퀴 위상 차이
   if (side === "right") {
     p = (p + 0.5) % 1;
   }
@@ -562,42 +600,30 @@ function getRobotPose(side) {
     x1 = 0.965;
   }
 
-  // 각 구간의 실제 길이를 계산
   const verticalLen = y1 - y0;
   const horizontalLen = x1 - x0;
   const totalLen = verticalLen * 2 + horizontalLen * 2;
 
-  // p를 전체 경로 길이 기준 거리로 변환
   let d = p * totalLen;
 
   let rx;
   let ry;
 
-  // 1구간: 왼쪽 세로 하강
   if (d <= verticalLen) {
     const t = d / verticalLen;
     rx = x0;
     ry = y0 + t * (y1 - y0);
-  }
-
-  // 2구간: 아래쪽 가로 이동
-  else if (d <= verticalLen + horizontalLen) {
+  } else if (d <= verticalLen + horizontalLen) {
     d -= verticalLen;
     const t = d / horizontalLen;
     rx = x0 + t * (x1 - x0);
     ry = y1;
-  }
-
-  // 3구간: 오른쪽 세로 상승
-  else if (d <= verticalLen + horizontalLen + verticalLen) {
+  } else if (d <= verticalLen + horizontalLen + verticalLen) {
     d -= verticalLen + horizontalLen;
     const t = d / verticalLen;
     rx = x1;
     ry = y1 - t * (y1 - y0);
-  }
-
-  // 4구간: 위쪽 가로 복귀
-  else {
+  } else {
     d -= verticalLen + horizontalLen + verticalLen;
     const t = d / horizontalLen;
     rx = x1 - t * (x1 - x0);
@@ -630,7 +656,6 @@ function isInCurrentLidarView(rx, ry) {
 }
 
 function observeCurrentArea() {
-  // 현재 두 로봇 주변의 heatmap 셀만 새로 측정
   for (let y = barn.y; y < barn.y + barn.h; y += HEAT_STEP) {
     for (let x = barn.x; x < barn.x + barn.w; x += HEAT_STEP) {
       const rx = (x - barn.x) / barn.w;
@@ -645,7 +670,6 @@ function observeCurrentArea() {
     }
   }
 
-  // 현재 두 로봇 주변의 센서 지점만 새로 측정
   for (const s of sensors) {
     if (!isInCurrentLidarView(s.rx, s.ry)) {
       continue;
@@ -728,12 +752,10 @@ function drawHeat(ctx, type) {
 function drawBarn(ctx) {
   ctx.save();
 
-  // 실제 SLAM 맵처럼 단순 외곽선만 표시
   ctx.strokeStyle = "#111827";
   ctx.lineWidth = 4;
   ctx.strokeRect(barn.x, barn.y, barn.w, barn.h);
 
-  // 좌우 대칭 기준선
   ctx.strokeStyle = "rgba(17, 24, 39, 0.18)";
   ctx.lineWidth = 1;
   ctx.setLineDash([6, 6]);
@@ -785,7 +807,6 @@ function drawSensors(ctx, type) {
   for (const s of sensors) {
     const v = observedSensorValues.get(s.id);
 
-    // 아직 로봇이 관측하지 않은 센서 지점이면 표시하지 않음
     if (!v) {
       continue;
     }

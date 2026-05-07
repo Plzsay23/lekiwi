@@ -1,1 +1,3 @@
-test
+import json
+
+print("test")
